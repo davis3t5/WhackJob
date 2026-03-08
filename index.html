@@ -269,6 +269,75 @@
       color: #9ca3af;
       font-style: italic;
     }
+
+    /* ── Member Sign Up Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+      padding: 40px;
+      width: 100%;
+      max-width: 460px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-card h2 {
+      font-size: 1.5rem;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+
+    .modal-subtitle {
+      color: #6b7280;
+      font-size: 0.95rem;
+      margin-bottom: 16px;
+    }
+
+    .joe-gif {
+      display: block;
+      width: 100%;
+      max-width: 280px;
+      border-radius: 8px;
+      margin: 0 auto 24px;
+    }
+
+    .confirm-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .confirm-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      cursor: pointer;
+      accent-color: #4f46e5;
+    }
+
+    .confirm-row label {
+      font-size: 0.95rem;
+      font-weight: 400;
+      margin-bottom: 0;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -321,6 +390,51 @@
     <p class="disclaimer">Not financial advice. Analyst consensus updates monthly; prices refresh every 5 min.</p>
   </div>
 
+  <!-- Member Sign Up Modal -->
+  <div class="modal-overlay" id="memberModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <h2 id="modalTitle">Member Sign Up</h2>
+      <p class="modal-subtitle">One more step to join the family.</p>
+
+      <!-- Joe Dirt GIF — replace the src URL with any Joe Dirt GIF from giphy.com if needed -->
+      <img
+        class="joe-gif"
+        src="https://media.giphy.com/media/3oriNZoNvn73MZaFYk/giphy.gif"
+        alt="Joe Dirt"
+      />
+
+      <form id="memberForm" novalidate>
+        <div class="confirm-row">
+          <input type="checkbox" id="likesJoe" />
+          <label for="likesJoe">I confirm that I like <strong>Joe Momma</strong></label>
+        </div>
+        <p class="error-msg" id="likesJoeError">You must confirm you like Joe Momma.</p>
+
+        <div class="form-group" style="margin-top: 20px;">
+          <label for="birthdate">Birthdate</label>
+          <input type="date" id="birthdate" name="birthdate" />
+          <p class="error-msg" id="birthdateError">Please enter your birthdate.</p>
+        </div>
+
+        <div class="form-group">
+          <label for="highSchool">High School</label>
+          <input type="text" id="highSchool" name="highSchool" placeholder="Lincoln High School" autocomplete="off" />
+          <p class="error-msg" id="highSchoolError">Please enter your high school.</p>
+        </div>
+
+        <div class="form-group">
+          <label for="restroom">Favorite Public Restroom</label>
+          <input type="text" id="restroom" name="restroom" placeholder="e.g. Times Square Starbucks" autocomplete="off" />
+          <p class="error-msg" id="restroomError">Please enter your favorite public restroom.</p>
+        </div>
+
+        <button type="submit">Complete Sign Up</button>
+      </form>
+
+      <div class="success-banner" id="memberSuccess"></div>
+    </div>
+  </div>
+
   <script>
     // ── Registration form ──────────────────────────────────────────────────────
     const form = document.getElementById('userForm');
@@ -352,11 +466,8 @@
       setError(emailInput, emailError, emailInvalid);
 
       if (!nameInvalid && !emailInvalid) {
-        successBanner.textContent = `Thanks, ${nameVal}! We'll be in touch at ${emailVal}.`;
-        successBanner.classList.add('visible');
         form.reset();
-      } else {
-        successBanner.classList.remove('visible');
+        document.getElementById('memberModal').classList.add('open');
       }
     });
 
@@ -364,8 +475,69 @@
       input.addEventListener('input', function () {
         input.classList.remove('error');
         document.getElementById(input.id + 'Error').classList.remove('visible');
-        successBanner.classList.remove('visible');
       });
+    });
+
+    // ── Member Sign Up Modal ───────────────────────────────────────────────────
+    const memberModal = document.getElementById('memberModal');
+    const memberForm = document.getElementById('memberForm');
+    const memberSuccess = document.getElementById('memberSuccess');
+
+    // Close modal when clicking the dark backdrop (not the card itself)
+    memberModal.addEventListener('click', function (e) {
+      if (e.target === memberModal) {
+        memberModal.classList.remove('open');
+      }
+    });
+
+    memberForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const likesJoe = document.getElementById('likesJoe');
+      const birthdate = document.getElementById('birthdate');
+      const highSchool = document.getElementById('highSchool');
+      const restroom = document.getElementById('restroom');
+
+      const likesJoeInvalid = !likesJoe.checked;
+      const birthdateInvalid = !birthdate.value;
+      const highSchoolInvalid = !highSchool.value.trim();
+      const restroomInvalid = !restroom.value.trim();
+
+      document.getElementById('likesJoeError').classList.toggle('visible', likesJoeInvalid);
+      document.getElementById('birthdateError').classList.toggle('visible', birthdateInvalid);
+      document.getElementById('highSchoolError').classList.toggle('visible', highSchoolInvalid);
+      document.getElementById('restroomError').classList.toggle('visible', restroomInvalid);
+
+      [birthdate, highSchool, restroom].forEach(function (input) {
+        input.classList.toggle('error',
+          (input === birthdate && birthdateInvalid) ||
+          (input === highSchool && highSchoolInvalid) ||
+          (input === restroom && restroomInvalid)
+        );
+      });
+
+      if (!likesJoeInvalid && !birthdateInvalid && !highSchoolInvalid && !restroomInvalid) {
+        memberForm.style.display = 'none';
+        memberSuccess.textContent = "Welcome to the family! Joe Momma would be proud.";
+        memberSuccess.classList.add('visible');
+        setTimeout(function () {
+          memberModal.classList.remove('open');
+          memberForm.style.display = '';
+          memberSuccess.classList.remove('visible');
+          memberForm.reset();
+        }, 2500);
+      }
+    });
+
+    // Clear field errors on input within the member form
+    [document.getElementById('birthdate'), document.getElementById('highSchool'), document.getElementById('restroom')].forEach(function (input) {
+      input.addEventListener('input', function () {
+        input.classList.remove('error');
+        document.getElementById(input.id + 'Error').classList.remove('visible');
+      });
+    });
+    document.getElementById('likesJoe').addEventListener('change', function () {
+      document.getElementById('likesJoeError').classList.remove('visible');
     });
 
     // ── AI Stocks ──────────────────────────────────────────────────────────────
