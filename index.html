@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WhackJob - User Registration</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      color: #1a1a2e;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #6b7280;
+      font-size: 0.95rem;
+      margin-bottom: 32px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 1rem;
+      color: #111827;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    }
+
+    input.error {
+      border-color: #ef4444;
+    }
+
+    .error-msg {
+      color: #ef4444;
+      font-size: 0.8rem;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .error-msg.visible {
+      display: block;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 12px;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 8px;
+    }
+
+    button[type="submit"]:hover {
+      background: #4338ca;
+    }
+
+    .success-banner {
+      display: none;
+      background: #ecfdf5;
+      border: 1px solid #6ee7b7;
+      border-radius: 8px;
+      color: #065f46;
+      padding: 14px 16px;
+      margin-top: 20px;
+      font-size: 0.95rem;
+    }
+
+    .success-banner.visible {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Welcome to WhackJob</h1>
+    <p class="subtitle">Enter your details to get started.</p>
+
+    <form id="userForm" novalidate>
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          placeholder="Jane Doe"
+          autocomplete="name"
+        />
+        <p class="error-msg" id="nameError">Please enter your full name.</p>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          placeholder="jane@example.com"
+          autocomplete="email"
+        />
+        <p class="error-msg" id="emailError">Please enter a valid email address.</p>
+      </div>
+
+      <button type="submit">Submit</button>
+    </form>
+
+    <div class="success-banner" id="successBanner"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('userForm');
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const nameError = document.getElementById('nameError');
+    const emailError = document.getElementById('emailError');
+    const successBanner = document.getElementById('successBanner');
+
+    function validateEmail(value) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+    }
+
+    function setError(input, errorEl, show) {
+      input.classList.toggle('error', show);
+      errorEl.classList.toggle('visible', show);
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const nameVal = nameInput.value.trim();
+      const emailVal = emailInput.value.trim();
+
+      const nameInvalid = nameVal.length === 0;
+      const emailInvalid = !validateEmail(emailVal);
+
+      setError(nameInput, nameError, nameInvalid);
+      setError(emailInput, emailError, emailInvalid);
+
+      if (!nameInvalid && !emailInvalid) {
+        successBanner.textContent = `Thanks, ${nameVal}! We'll be in touch at ${emailVal}.`;
+        successBanner.classList.add('visible');
+        form.reset();
+      } else {
+        successBanner.classList.remove('visible');
+      }
+    });
+
+    // Clear errors on input
+    [nameInput, emailInput].forEach(function (input) {
+      input.addEventListener('input', function () {
+        input.classList.remove('error');
+        document.getElementById(input.id + 'Error').classList.remove('visible');
+        successBanner.classList.remove('visible');
+      });
+    });
+  </script>
+</body>
+</html>
