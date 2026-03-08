@@ -16,8 +16,10 @@
       background: #3d829c;
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
+      padding: 40px 16px;
+      gap: 24px;
     }
 
     .card {
@@ -116,6 +118,157 @@
     .success-banner.visible {
       display: block;
     }
+
+    /* ── Stocks card ── */
+    .stocks-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    .stocks-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+
+    .stocks-header h2 {
+      font-size: 1.3rem;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+
+    .stocks-header .subtitle {
+      margin-bottom: 0;
+    }
+
+    .last-updated {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      white-space: nowrap;
+      margin-left: 16px;
+      padding-top: 4px;
+    }
+
+    .stock-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .stock-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .stock-item:last-child {
+      border-bottom: none;
+    }
+
+    .stock-rank {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #4f46e5;
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .stock-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .stock-name-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+
+    .stock-name {
+      font-weight: 600;
+      color: #111827;
+      font-size: 0.95rem;
+    }
+
+    .stock-ticker {
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 0.72rem;
+      background: #eef2ff;
+      color: #4f46e5;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .stock-meta {
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+
+    .analyst-badge {
+      display: inline-block;
+      background: #f0fdf4;
+      color: #15803d;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-left: 4px;
+    }
+
+    .stock-price-col {
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .stock-price {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .stock-change {
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .stock-change.positive { color: #16a34a; }
+    .stock-change.negative { color: #dc2626; }
+    .stock-change.neutral  { color: #9ca3af; }
+
+    .loading-state {
+      color: #9ca3af;
+      font-size: 0.9rem;
+      padding: 12px 0;
+    }
+
+    .error-state {
+      color: #dc2626;
+      font-size: 0.85rem;
+      padding: 12px 0;
+    }
+
+    .disclaimer {
+      margin-top: 20px;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -154,7 +307,22 @@
     <div class="success-banner" id="successBanner"></div>
   </div>
 
+  <div class="stocks-card">
+    <div class="stocks-header">
+      <div>
+        <h2>Top 5 AI Stocks</h2>
+        <p class="subtitle">Ranked by analyst buy consensus &middot; Prices via Finnhub</p>
+      </div>
+      <span class="last-updated" id="lastUpdated">Loading&hellip;</span>
+    </div>
+    <ul class="stock-list" id="stockList">
+      <li class="loading-state">Fetching analyst data&hellip;</li>
+    </ul>
+    <p class="disclaimer">Not financial advice. Analyst consensus updates monthly; prices refresh every 5 min.</p>
+  </div>
+
   <script>
+    // ── Registration form ──────────────────────────────────────────────────────
     const form = document.getElementById('userForm');
     const nameInput = document.getElementById('name');
     const emailInput = document.getElementById('email');
@@ -192,7 +360,6 @@
       }
     });
 
-    // Clear errors on input
     [nameInput, emailInput].forEach(function (input) {
       input.addEventListener('input', function () {
         input.classList.remove('error');
@@ -200,6 +367,122 @@
         successBanner.classList.remove('visible');
       });
     });
+
+    // ── AI Stocks ──────────────────────────────────────────────────────────────
+    const FINNHUB_KEY = 'd6mtdm1r01qir35ie1tgd6mtdm1r01qir35ie1u0';
+    const BASE_URL = 'https://finnhub.io/api/v1';
+
+    const UNIVERSE = [
+      { symbol: 'NVDA', name: 'NVIDIA' },
+      { symbol: 'MSFT', name: 'Microsoft' },
+      { symbol: 'AVGO', name: 'Broadcom' },
+      { symbol: 'GOOGL', name: 'Alphabet' },
+      { symbol: 'META', name: 'Meta Platforms' },
+      { symbol: 'AMZN', name: 'Amazon' },
+      { symbol: 'AMD', name: 'AMD' },
+      { symbol: 'TSM', name: 'Taiwan Semiconductor' },
+      { symbol: 'PLTR', name: 'Palantir' },
+      { symbol: 'ORCL', name: 'Oracle' },
+    ];
+
+    const stockList = document.getElementById('stockList');
+    const lastUpdatedEl = document.getElementById('lastUpdated');
+
+    function formatPrice(price) {
+      if (price == null || price === 0) return '—';
+      return '$' + price.toFixed(2);
+    }
+
+    function formatChange(dp) {
+      if (dp == null) return { text: '—', cls: 'neutral' };
+      const sign = dp >= 0 ? '+' : '';
+      return {
+        text: sign + dp.toFixed(2) + '%',
+        cls: dp > 0 ? 'positive' : dp < 0 ? 'negative' : 'neutral',
+      };
+    }
+
+    function renderStockItems(stocks) {
+      stockList.innerHTML = stocks.map((s, i) => `
+        <li class="stock-item">
+          <span class="stock-rank">${i + 1}</span>
+          <div class="stock-info">
+            <div class="stock-name-row">
+              <span class="stock-name">${s.name}</span>
+              <span class="stock-ticker">${s.symbol}</span>
+            </div>
+            <span class="stock-meta">
+              ${s.totalBuys} analyst buy${s.totalBuys !== 1 ? 's' : ''}
+              <span class="analyst-badge">&#x2713; Top pick</span>
+            </span>
+          </div>
+          <div class="stock-price-col">
+            <div class="stock-price" id="price-${s.symbol}">—</div>
+            <div class="stock-change neutral" id="change-${s.symbol}">—</div>
+          </div>
+        </li>
+      `).join('');
+    }
+
+    async function refreshPrices(stocks) {
+      const quotes = await Promise.all(stocks.map(s =>
+        fetch(`${BASE_URL}/quote?symbol=${s.symbol}&token=${FINNHUB_KEY}`)
+          .then(r => r.json())
+          .catch(() => null)
+      ));
+
+      stocks.forEach((s, i) => {
+        const q = quotes[i];
+        const priceEl = document.getElementById('price-' + s.symbol);
+        const changeEl = document.getElementById('change-' + s.symbol);
+        if (!priceEl || !changeEl) return;
+
+        priceEl.textContent = q ? formatPrice(q.c) : '—';
+
+        const ch = q ? formatChange(q.dp) : { text: '—', cls: 'neutral' };
+        changeEl.textContent = ch.text;
+        changeEl.className = 'stock-change ' + ch.cls;
+      });
+
+      const now = new Date();
+      lastUpdatedEl.textContent = 'Updated ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function loadTopStocks() {
+      try {
+        const results = await Promise.all(UNIVERSE.map(s =>
+          fetch(`${BASE_URL}/stock/recommendation?symbol=${s.symbol}&token=${FINNHUB_KEY}`)
+            .then(r => r.json())
+            .then(data => ({ ...s, rec: Array.isArray(data) && data.length ? data[0] : null }))
+            .catch(() => ({ ...s, rec: null }))
+        ));
+
+        const scored = results
+          .filter(s => s.rec)
+          .map(s => ({
+            ...s,
+            score: (s.rec.strongBuy * 2) + s.rec.buy - s.rec.sell - (s.rec.strongSell * 2),
+            totalBuys: s.rec.strongBuy + s.rec.buy,
+          }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 5);
+
+        if (scored.length === 0) {
+          stockList.innerHTML = '<li class="error-state">Could not load analyst data. Please try again later.</li>';
+          lastUpdatedEl.textContent = 'Unavailable';
+          return;
+        }
+
+        renderStockItems(scored);
+        await refreshPrices(scored);
+        setInterval(() => refreshPrices(scored), 5 * 60 * 1000);
+      } catch (err) {
+        stockList.innerHTML = '<li class="error-state">Failed to load stock data. Check your connection and try again.</li>';
+        lastUpdatedEl.textContent = 'Error';
+      }
+    }
+
+    loadTopStocks();
   </script>
 </body>
 </html>
